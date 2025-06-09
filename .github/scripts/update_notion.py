@@ -15,7 +15,7 @@ def get_commit_info():
     ]).decode('utf-8').strip().split('\x1f')
     
     # Defensive: check length and print for debugging
-    if len(commit_info) < 5:
+    if len(commit_info) < 4:
         print("DEBUG: commit_info =", commit_info)
         raise Exception(f"Unexpected commit_info format: {commit_info}")
     
