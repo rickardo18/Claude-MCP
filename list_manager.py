@@ -16,7 +16,10 @@ def save_tasks(tasks):
 def add_task(tasks):
     task = input("Enter the task: ").strip()
     if task:
-        tasks.append({"task": task, "done": False})
+        priority = input("Enter priority (High/Medium/Low): ").strip().capitalize()
+        if priority not in ["High", "Medium", "Low"]:
+            priority = "Medium"
+        tasks.append({"task": task, "done": False, "priority": priority})
         print("Task added.")
     else:
         print("Empty task not added.")
@@ -27,7 +30,8 @@ def view_tasks(tasks):
         return
     for i, t in enumerate(tasks):
         status = "✔️" if t["done"] else "❌"
-        print(f"{i+1}. [{status}] {t['task']}")
+        priority = t.get("priority", "Medium")
+        print(f"{i+1}. [{status}] {t['task']} (Priority: {priority})")
 
 def mark_task_done(tasks):
     view_tasks(tasks)
@@ -90,6 +94,12 @@ def edit_task(tasks):
                 print("Task updated.")
             else:
                 print("Empty description. Task not updated.")
+            new_priority = input(f"Enter new priority (High/Medium/Low) [current: {tasks[index].get('priority', 'Medium')}]: ").strip().capitalize()
+            if new_priority in ["High", "Medium", "Low"]:
+                tasks[index]["priority"] = new_priority
+                print("Priority updated.")
+            else:
+                print("Priority unchanged.")
         else:
             print("Invalid task number.")
     except ValueError:
