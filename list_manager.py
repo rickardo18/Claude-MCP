@@ -104,8 +104,8 @@ def main():
         print("3. Mark task as done")
         print("4. Remove task")
         print("5. Filter tasks")
-        print("6. Exit")
-        print("7. Edit task")
+        print("6. Edit task")
+        print("7. Exit")
         choice = input("Choose an option (1-7): ").strip()
 
         if choice == "1":
@@ -119,11 +119,11 @@ def main():
         elif choice == "5":
             filter_tasks(tasks)
         elif choice == "6":
+            edit_task(tasks)
+        elif choice == "7":
             save_tasks(tasks)
             print("Goodbye!")
             break
-        elif choice == "7":
-            edit_task(tasks)
         else:
             print("Invalid choice.")
 
