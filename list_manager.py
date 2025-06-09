@@ -53,6 +53,32 @@ def remove_task(tasks):
     except ValueError:
         print("Please enter a valid number.")
 
+def filter_tasks(tasks):
+    print("\nFilter Options:")
+    print("1. Show only completed tasks")
+    print("2. Show only incomplete tasks")
+    print("3. Search by keyword")
+    print("4. Back to main menu")
+    choice = input("Choose a filter option (1-4): ").strip()
+
+    if choice == "1":
+        filtered = [t for t in tasks if t["done"]]
+        print("\nCompleted Tasks:")
+        view_tasks(filtered)
+    elif choice == "2":
+        filtered = [t for t in tasks if not t["done"]]
+        print("\nIncomplete Tasks:")
+        view_tasks(filtered)
+    elif choice == "3":
+        keyword = input("Enter keyword to search: ").strip().lower()
+        filtered = [t for t in tasks if keyword in t["task"].lower()]
+        print(f"\nTasks containing '{keyword}':")
+        view_tasks(filtered)
+    elif choice == "4":
+        return
+    else:
+        print("Invalid choice.")
+
 def main():
     tasks = load_tasks()
     while True:
@@ -61,8 +87,9 @@ def main():
         print("2. Add task")
         print("3. Mark task as done")
         print("4. Remove task")
-        print("5. Exit")
-        choice = input("Choose an option (1-5): ").strip()
+        print("5. Filter tasks")
+        print("6. Exit")
+        choice = input("Choose an option (1-6): ").strip()
 
         if choice == "1":
             view_tasks(tasks)
@@ -73,6 +100,8 @@ def main():
         elif choice == "4":
             remove_task(tasks)
         elif choice == "5":
+            filter_tasks(tasks)
+        elif choice == "6":
             save_tasks(tasks)
             print("Goodbye!")
             break
