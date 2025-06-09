@@ -11,8 +11,8 @@ def get_commit_info():
     
     # Get commit details
     commit_info = subprocess.check_output([
-        'git', 'log', '-1', '--format=%B%n%an%n%ae%n%at', latest_commit
-    ]).decode('utf-8').strip().split('\n')
+        'git', 'log', '-1', '--format=%x1f%B%x1f%an%x1f%ae%x1f%at', latest_commit
+    ]).decode('utf-8').strip().split('\x1f')
     
     # Get changed files
     changed_files = subprocess.check_output([
@@ -21,10 +21,10 @@ def get_commit_info():
     
     return {
         'hash': latest_commit,
-        'message': commit_info[0],
-        'author': commit_info[1],
-        'email': commit_info[2],
-        'timestamp': datetime.fromtimestamp(int(commit_info[3])).isoformat(),
+        'message': commit_info[1],
+        'author': commit_info[2],
+        'email': commit_info[3],
+        'timestamp': datetime.fromtimestamp(int(commit_info[4])).isoformat(),
         'changed_files': changed_files
     }
 
