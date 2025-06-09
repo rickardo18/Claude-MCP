@@ -26,10 +26,10 @@ def get_commit_info():
     
     return {
         'hash': latest_commit,
-        'message': commit_info[1],
-        'author': commit_info[2],
-        'email': commit_info[3],
-        'timestamp': datetime.fromtimestamp(int(commit_info[4])).isoformat(),
+        'message': commit_info[0],
+        'author': commit_info[1],
+        'email': commit_info[2],
+        'timestamp': datetime.fromtimestamp(int(commit_info[3])).isoformat(),
         'changed_files': changed_files
     }
 
