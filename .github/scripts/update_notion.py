@@ -14,6 +14,11 @@ def get_commit_info():
         'git', 'log', '-1', '--format=%x1f%B%x1f%an%x1f%ae%x1f%at', latest_commit
     ]).decode('utf-8').strip().split('\x1f')
     
+    # Defensive: check length and print for debugging
+    if len(commit_info) < 5:
+        print("DEBUG: commit_info =", commit_info)
+        raise Exception(f"Unexpected commit_info format: {commit_info}")
+    
     # Get changed files
     changed_files = subprocess.check_output([
         'git', 'diff-tree', '--no-commit-id', '--name-only', '-r', latest_commit
