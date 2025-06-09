@@ -79,6 +79,22 @@ def filter_tasks(tasks):
     else:
         print("Invalid choice.")
 
+def edit_task(tasks):
+    view_tasks(tasks)
+    try:
+        index = int(input("Enter task number to edit: ")) - 1
+        if 0 <= index < len(tasks):
+            new_desc = input(f"Enter new description for task '{tasks[index]['task']}': ").strip()
+            if new_desc:
+                tasks[index]["task"] = new_desc
+                print("Task updated.")
+            else:
+                print("Empty description. Task not updated.")
+        else:
+            print("Invalid task number.")
+    except ValueError:
+        print("Please enter a valid number.")
+
 def main():
     tasks = load_tasks()
     while True:
@@ -89,7 +105,8 @@ def main():
         print("4. Remove task")
         print("5. Filter tasks")
         print("6. Exit")
-        choice = input("Choose an option (1-6): ").strip()
+        print("7. Edit task")
+        choice = input("Choose an option (1-7): ").strip()
 
         if choice == "1":
             view_tasks(tasks)
@@ -105,6 +122,8 @@ def main():
             save_tasks(tasks)
             print("Goodbye!")
             break
+        elif choice == "7":
+            edit_task(tasks)
         else:
             print("Invalid choice.")
 
