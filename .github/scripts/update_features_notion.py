@@ -46,7 +46,7 @@ def infer_features_from_diff(diffs):
             {"parts": [{"text": prompt}]}
         ]
     }
-    url = "https://generativelanguage.googleapis.com/v1/models/gemini-pro-001:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro-vision-latest:generateContent"
     response = requests.post(url, headers=headers, params={"key": GEMINI_API_KEY}, json=data)
     if response.status_code == 200:
         try:
