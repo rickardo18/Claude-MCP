@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import csv
 
 class Contact:
     def __init__(self, name, phone, email=None):
@@ -99,10 +100,19 @@ class ContactBook:
                 data = json.load(f)
                 self.contacts = [Contact.from_dict(d) for d in data]
 
+    def export_contacts_csv(self, filename="contacts_export.csv"):
+        with open(filename, "w", newline="") as csvfile:
+            fieldnames = ["name", "phone", "email"]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for contact in self.contacts:
+                writer.writerow(contact.to_dict())
+        print(f"Contacts exported to {filename}")
+
 def main():
     book = ContactBook()
     while True:
-        print("\nCommands: add, list, find, remove, edit, exit")
+        print("\nCommands: add, list, find, remove, edit, export, exit")
         cmd = input("Enter command: ").strip().lower()
 
         if cmd == "add":
@@ -121,6 +131,8 @@ def main():
         elif cmd == "edit":
             index = int(input("Contact number to edit: "))
             book.edit_contact(index)
+        elif cmd == "export":
+            book.export_contacts_csv()
         elif cmd == "exit":
             break
         else:
