@@ -1,18 +1,46 @@
+import json
+import os
+import re
+
 class Contact:
-    def __init__(self, name, phone):
+    def __init__(self, name, phone, email=None):
         self.name = name
         self.phone = phone
+        self.email = email
+
+    def to_dict(self):
+        return {"name": self.name, "phone": self.phone, "email": self.email}
+
+    @staticmethod
+    def from_dict(data):
+        return Contact(data["name"], data["phone"], data.get("email"))
 
     def __str__(self):
-        return f"{self.name} - {self.phone}"
+        contact_str = f"{self.name} - {self.phone}"
+        if self.email:
+            contact_str += f" - {self.email}"
+        return contact_str
+
+    @staticmethod
+    def validate_email(email):
+        if not email:
+            return True
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return bool(re.match(pattern, email))
 
 class ContactBook:
-    def __init__(self):
+    def __init__(self, filename="contacts.json"):
         self.contacts = []
+        self.filename = filename
+        self.load_contacts()
 
-    def add_contact(self, name, phone):
-        self.contacts.append(Contact(name, phone))
+    def add_contact(self, name, phone, email=None):
+        if email and not Contact.validate_email(email):
+            print("Invalid email format. Contact not added.")
+            return
+        self.contacts.append(Contact(name, phone, email))
         print(f"Added contact: {name}")
+        self.save_contacts()
 
     def list_contacts(self):
         if not self.contacts:
@@ -20,8 +48,10 @@ class ContactBook:
         for idx, contact in enumerate(self.contacts, 1):
             print(f"{idx}. {contact}")
 
-    def find_contact(self, name):
-        matches = [c for c in self.contacts if name.lower() in c.name.lower()]
+    def find_contact(self, query):
+        matches = [c for c in self.contacts if 
+                  query.lower() in c.name.lower() or 
+                  (c.email and query.lower() in c.email.lower())]
         if matches:
             for c in matches:
                 print(c)
@@ -32,8 +62,19 @@ class ContactBook:
         try:
             removed = self.contacts.pop(index - 1)
             print(f"Removed: {removed.name}")
+            self.save_contacts()
         except IndexError:
             print("Invalid index.")
+
+    def save_contacts(self):
+        with open(self.filename, "w") as f:
+            json.dump([c.to_dict() for c in self.contacts], f, indent=4)
+
+    def load_contacts(self):
+        if os.path.exists(self.filename):
+            with open(self.filename, "r") as f:
+                data = json.load(f)
+                self.contacts = [Contact.from_dict(d) for d in data]
 
 def main():
     book = ContactBook()
@@ -44,11 +85,12 @@ def main():
         if cmd == "add":
             name = input("Name: ")
             phone = input("Phone: ")
-            book.add_contact(name, phone)
+            email = input("Email (optional, press Enter to skip): ").strip() or None
+            book.add_contact(name, phone, email)
         elif cmd == "list":
             book.list_contacts()
         elif cmd == "find":
-            query = input("Name to search: ")
+            query = input("Search by name or email: ")
             book.find_contact(query)
         elif cmd == "remove":
             index = int(input("Contact number to remove: "))
