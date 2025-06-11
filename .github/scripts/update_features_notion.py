@@ -39,7 +39,6 @@ def infer_features_from_diff(diffs):
         prompt += f"File: {file}\nDiff:\n{diff}\n\n"
     prompt += "\nFeatures/changes introduced:"
     headers = {
-        "Authorization": f"Bearer {GEMINI_API_KEY}",
         "Content-Type": "application/json"
     }
     data = {
