@@ -4,22 +4,25 @@ import re
 import csv
 
 class Contact:
-    def __init__(self, name, phone, email=None):
+    def __init__(self, name, phone, email=None, favorite=False):
         self.name = name
         self.phone = phone
         self.email = email
+        self.favorite = favorite
 
     def to_dict(self):
-        return {"name": self.name, "phone": self.phone, "email": self.email}
+        return {"name": self.name, "phone": self.phone, "email": self.email, "favorite": self.favorite}
 
     @staticmethod
     def from_dict(data):
-        return Contact(data["name"], data["phone"], data.get("email"))
+        return Contact(data["name"], data["phone"], data.get("email"), data.get("favorite", False))
 
     def __str__(self):
         contact_str = f"{self.name} - {self.phone}"
         if self.email:
             contact_str += f" - {self.email}"
+        if self.favorite:
+            contact_str += " [FAVORITE]"
         return contact_str
 
     @staticmethod
@@ -109,10 +112,35 @@ class ContactBook:
                 writer.writerow(contact.to_dict())
         print(f"Contacts exported to {filename}")
 
+    def list_favorites(self):
+        favorites = [c for c in self.contacts if c.favorite]
+        if not favorites:
+            print("No favorite contacts found.")
+        for idx, contact in enumerate(favorites, 1):
+            print(f"{idx}. {contact}")
+
+    def mark_favorite(self, index):
+        try:
+            contact = self.contacts[index - 1]
+            contact.favorite = True
+            self.save_contacts()
+            print(f"Marked {contact.name} as favorite.")
+        except IndexError:
+            print("Invalid index.")
+
+    def unmark_favorite(self, index):
+        try:
+            contact = self.contacts[index - 1]
+            contact.favorite = False
+            self.save_contacts()
+            print(f"Unmarked {contact.name} as favorite.")
+        except IndexError:
+            print("Invalid index.")
+
 def main():
     book = ContactBook()
     while True:
-        print("\nCommands: add, list, find, remove, edit, export, exit")
+        print("\nCommands: add, list, list_favorites, mark_favorite, unmark_favorite, find, remove, edit, export, exit")
         cmd = input("Enter command: ").strip().lower()
 
         if cmd == "add":
@@ -122,6 +150,14 @@ def main():
             book.add_contact(name, phone, email)
         elif cmd == "list":
             book.list_contacts()
+        elif cmd == "list_favorites":
+            book.list_favorites()
+        elif cmd == "mark_favorite":
+            index = int(input("Contact number to mark as favorite: "))
+            book.mark_favorite(index)
+        elif cmd == "unmark_favorite":
+            index = int(input("Contact number to unmark as favorite: "))
+            book.unmark_favorite(index)
         elif cmd == "find":
             query = input("Search by name or email: ")
             book.find_contact(query)
