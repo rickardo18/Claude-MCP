@@ -66,6 +66,29 @@ class ContactBook:
         except IndexError:
             print("Invalid index.")
 
+    def edit_contact(self, index):
+        try:
+            contact = self.contacts[index - 1]
+            print(f"Editing contact: {contact}")
+            new_name = input(f"New name (press Enter to keep '{contact.name}'): ").strip()
+            new_phone = input(f"New phone (press Enter to keep '{contact.phone}'): ").strip()
+            new_email = input(f"New email (press Enter to keep '{contact.email or ''}'): ").strip()
+            if new_name:
+                contact.name = new_name
+            if new_phone:
+                contact.phone = new_phone
+            if new_email:
+                if Contact.validate_email(new_email):
+                    contact.email = new_email
+                else:
+                    print("Invalid email format. Email not updated.")
+            elif new_email == '':
+                contact.email = None
+            self.save_contacts()
+            print("Contact updated.")
+        except IndexError:
+            print("Invalid index.")
+
     def save_contacts(self):
         with open(self.filename, "w") as f:
             json.dump([c.to_dict() for c in self.contacts], f, indent=4)
@@ -79,7 +102,7 @@ class ContactBook:
 def main():
     book = ContactBook()
     while True:
-        print("\nCommands: add, list, find, remove, exit")
+        print("\nCommands: add, list, find, remove, edit, exit")
         cmd = input("Enter command: ").strip().lower()
 
         if cmd == "add":
@@ -95,6 +118,9 @@ def main():
         elif cmd == "remove":
             index = int(input("Contact number to remove: "))
             book.remove_contact(index)
+        elif cmd == "edit":
+            index = int(input("Contact number to edit: "))
+            book.edit_contact(index)
         elif cmd == "exit":
             break
         else:
