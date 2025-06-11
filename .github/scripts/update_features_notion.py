@@ -2,7 +2,7 @@ import os
 import subprocess
 import requests
 
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 NOTION_TOKEN = os.environ['NOTION_TOKEN']
 NOTION_FEATURES_PAGE_ID = os.environ['NOTION_FEATURES_PAGE_ID']
 
@@ -29,8 +29,8 @@ def get_code_diff(files, commit_hash):
     return diffs
 
 def infer_features_from_diff(diffs):
-    if not OPENAI_API_KEY:
-        return "(AI feature inference unavailable: OPENAI_API_KEY not set)"
+    if not GEMINI_API_KEY:
+        return "(AI feature inference unavailable: GEMINI_API_KEY not set)"
     prompt = (
         "Given the following code diffs, infer and summarize any new features or significant changes "
         "that have been introduced. Be concise and use bullet points.\n\n"
@@ -39,20 +39,21 @@ def infer_features_from_diff(diffs):
         prompt += f"File: {file}\nDiff:\n{diff}\n\n"
     prompt += "\nFeatures/changes introduced:"
     headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Authorization": f"Bearer {GEMINI_API_KEY}",
         "Content-Type": "application/json"
     }
     data = {
-        "model": "gpt-3.5-turbo",
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant that summarizes code changes as new features."},
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 300
+        "contents": [
+            {"parts": [{"text": prompt}]}
+        ]
     }
-    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+    response = requests.post(url, headers=headers, params={"key": GEMINI_API_KEY}, json=data)
     if response.status_code == 200:
-        return response.json()['choices'][0]['message']['content'].strip()
+        try:
+            return response.json()['candidates'][0]['content']['parts'][0]['text'].strip()
+        except Exception:
+            return f"(AI feature inference failed: Unexpected Gemini response: {response.text})"
     else:
         return f"(AI feature inference failed: {response.text})"
 
@@ -125,4 +126,4 @@ def main():
         exit(1)
 
 if __name__ == '__main__':
-    main() 
+    main()
