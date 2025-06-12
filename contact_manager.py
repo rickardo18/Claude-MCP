@@ -4,25 +4,25 @@ import re
 import csv
 
 class Contact:
-    def __init__(self, name, phone, email=None, favorite=False):
+    def __init__(self, name, phone, email=None, favourite=False):
         self.name = name
         self.phone = phone
         self.email = email
-        self.favorite = favorite
+        self.favourite = favourite
 
     def to_dict(self):
-        return {"name": self.name, "phone": self.phone, "email": self.email, "favorite": self.favorite}
+        return {"name": self.name, "phone": self.phone, "email": self.email, "favourite": self.favourite}
 
     @staticmethod
     def from_dict(data):
-        return Contact(data["name"], data["phone"], data.get("email"), data.get("favorite", False))
+        return Contact(data["name"], data["phone"], data.get("email"), data.get("favourite", False))
 
     def __str__(self):
         contact_str = f"{self.name} - {self.phone}"
         if self.email:
             contact_str += f" - {self.email}"
-        if self.favorite:
-            contact_str += " [FAVORITE]"
+        if self.favourite:
+            contact_str += " [favourite]"
         return contact_str
 
     @staticmethod
@@ -112,28 +112,28 @@ class ContactBook:
                 writer.writerow(contact.to_dict())
         print(f"Contacts exported to {filename}")
 
-    def list_favorites(self):
-        favorites = [c for c in self.contacts if c.favorite]
-        if not favorites:
-            print("No favorite contacts found.")
-        for idx, contact in enumerate(favorites, 1):
+    def list_favourites(self):
+        favourites = [c for c in self.contacts if c.favourite]
+        if not favourites:
+            print("No favourite contacts found.")
+        for idx, contact in enumerate(favourites, 1):
             print(f"{idx}. {contact}")
 
-    def mark_favorite(self, index):
+    def mark_favourite(self, index):
         try:
             contact = self.contacts[index - 1]
-            contact.favorite = True
+            contact.favourite = True
             self.save_contacts()
-            print(f"Marked {contact.name} as favorite.")
+            print(f"Marked {contact.name} as favourite.")
         except IndexError:
             print("Invalid index.")
 
-    def unmark_favorite(self, index):
+    def unmark_favourite(self, index):
         try:
             contact = self.contacts[index - 1]
-            contact.favorite = False
+            contact.favourite = False
             self.save_contacts()
-            print(f"Unmarked {contact.name} as favorite.")
+            print(f"Unmarked {contact.name} as favourite.")
         except IndexError:
             print("Invalid index.")
 
@@ -154,10 +154,10 @@ def main():
             book.list_favourites()
         elif cmd == "mark_favourite":
             index = int(input("Contact number to mark as favourite: "))
-            book.mark_favorite(index)
+            book.mark_favourite(index)
         elif cmd == "unmark_favourite":
             index = int(input("Contact number to unmark as favourite: "))
-            book.unmark_favorite(index)
+            book.unmark_favourite(index)
         elif cmd == "find":
             query = input("Search by name or email: ")
             book.find_contact(query)
