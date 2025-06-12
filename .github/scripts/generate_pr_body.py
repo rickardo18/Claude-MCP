@@ -1,21 +1,13 @@
 import os
 import subprocess
 import requests
+import argparse
 
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-GITHUB_REPOSITORY = os.environ.get('GITHUB_REPOSITORY')  # e.g. "owner/repo"
-GITHUB_PR_NUMBER = os.environ.get('GITHUB_PR_NUMBER')    # PR number as string
 
-def get_pr_diff():
+def get_pr_diff(base, head):
     """Get the diff for the current PR (between base and head)."""
-    # Assumes the workflow checks out the PR branch and fetches the base branch
-    base = os.environ.get('GITHUB_BASE_REF')
-    head = os.environ.get('GITHUB_HEAD_REF')
-    if not base or not head:
-        # Fallback: get diff from origin/main
-        base = 'origin/main'
-        head = 'HEAD'
     diff = subprocess.check_output(['git', 'diff', f'{base}...{head}']).decode('utf-8')
     return diff
 
@@ -49,12 +41,12 @@ def generate_pr_summary(diff):
     else:
         return f"(AI PR summary failed: {response.text})"
 
-def update_github_pr_body(pr_body):
+def update_github_pr_body(repo, pr_number, pr_body):
     """Update the PR body using the GitHub API."""
-    if not (GITHUB_TOKEN and GITHUB_REPOSITORY and GITHUB_PR_NUMBER):
-        print("Missing GitHub environment variables.")
+    if not (GITHUB_TOKEN and repo and pr_number):
+        print("Missing GitHub environment variables or arguments.")
         return
-    url = f"https://api.github.com/repos/{GITHUB_REPOSITORY}/pulls/{GITHUB_PR_NUMBER}"
+    url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github+json"
@@ -67,9 +59,26 @@ def update_github_pr_body(pr_body):
         print("PR body updated successfully.")
 
 def main():
-    diff = get_pr_diff()
+    parser = argparse.ArgumentParser(description="Generate and update a PR body using Gemini.")
+    parser.add_argument('--repo', type=str, help='GitHub repository in owner/repo format')
+    parser.add_argument('--pr', type=str, help='Pull request number')
+    parser.add_argument('--base', type=str, default=None, help='Base branch or ref')
+    parser.add_argument('--head', type=str, default='HEAD', help='Head branch or ref')
+    args = parser.parse_args()
+
+    repo = args.repo or os.environ.get('GITHUB_REPOSITORY')
+    pr_number = args.pr or os.environ.get('GITHUB_PR_NUMBER')
+    base_ref = args.base or os.environ.get('GITHUB_BASE_REF') or 'main'
+    base = f'origin/{base_ref}'
+    head = args.head
+
+    if not (repo and pr_number):
+        print("You must specify --repo and --pr, or set GITHUB_REPOSITORY and GITHUB_PR_NUMBER.")
+        return
+
+    diff = get_pr_diff(base, head)
     pr_body = generate_pr_summary(diff)
-    update_github_pr_body(pr_body)
+    update_github_pr_body(repo, pr_number, pr_body)
 
 if __name__ == "__main__":
     main() 
