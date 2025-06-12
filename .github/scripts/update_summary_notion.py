@@ -100,7 +100,7 @@ def delete_notion_page_children(page_id):
         requests.delete(url, headers=headers)
 
 def parse_features_to_blocks(summary, features):
-    """Convert summary and features text into Notion block objects."""
+    """Convert summary and features text into Notion block objects with bold paragraphs for file names."""
     blocks = []
     # Add summary as a heading and paragraph
     blocks.append({
@@ -124,7 +124,7 @@ def parse_features_to_blocks(summary, features):
                 }]
             }
         })
-    # Add features as a heading and bulleted list
+    # Add features as a heading
     blocks.append({
         "object": "block",
         "type": "heading_1",
@@ -135,9 +135,43 @@ def parse_features_to_blocks(summary, features):
             }]
         }
     })
-    for line in features.splitlines():
-        line = line.strip()
-        if line.startswith('- '):
+    # Parse features for bold paragraphs and bulleted lists
+    lines = features.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        # File name as bold paragraph
+        if line.endswith(":") and not line.startswith("-"):
+            file_name = line[:-1].strip()
+            blocks.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": {"content": file_name},
+                        "annotations": {"bold": True}
+                    }]
+                }
+            })
+            i += 1
+            # Collect following bullet points
+            while i < len(lines) and lines[i].strip().startswith("-"):
+                feature_text = lines[i].strip()[2:].strip()
+                if feature_text:
+                    blocks.append({
+                        "object": "block",
+                        "type": "bulleted_list_item",
+                        "bulleted_list_item": {
+                            "rich_text": [{
+                                "type": "text",
+                                "text": {"content": feature_text}
+                            }]
+                        }
+                    })
+                i += 1
+        elif line.startswith("-"):
+            # Standalone bullet
             feature_text = line[2:].strip()
             if feature_text:
                 blocks.append({
@@ -150,8 +184,9 @@ def parse_features_to_blocks(summary, features):
                         }]
                     }
                 })
+            i += 1
         elif line:
-            # If not a bullet, add as a paragraph (fallback)
+            # Fallback: plain paragraph
             blocks.append({
                 "object": "block",
                 "type": "paragraph",
@@ -162,6 +197,9 @@ def parse_features_to_blocks(summary, features):
                     }]
                 }
             })
+            i += 1
+        else:
+            i += 1
     return blocks
 
 def update_notion_page(summary, features):
