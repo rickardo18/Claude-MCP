@@ -2,6 +2,7 @@ import os
 import subprocess
 import requests
 from pathlib import Path
+import re
 
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 NOTION_TOKEN = os.environ['NOTION_TOKEN']
@@ -100,7 +101,7 @@ def delete_notion_page_children(page_id):
         requests.delete(url, headers=headers)
 
 def parse_features_to_blocks(summary, features):
-    """Convert summary and features text into Notion block objects with bold paragraphs for file names."""
+    """Convert summary and features text into Notion block objects with bold paragraphs for file names, never as bullets."""
     blocks = []
     # Add summary as a heading and paragraph
     blocks.append({
@@ -135,14 +136,16 @@ def parse_features_to_blocks(summary, features):
             }]
         }
     })
-    # Parse features for bold paragraphs and bulleted lists
+    # Regex for file name as bold paragraph
+    file_bold_pattern = re.compile(r'^(?:\*|-)?\s*\*\*(.+?):\*\*\s*$')
     lines = features.splitlines()
     i = 0
     while i < len(lines):
         line = lines[i].strip()
-        # File name as bold paragraph
-        if line.endswith(":") and not line.startswith("-"):
-            file_name = line[:-1].strip()
+        # File name as bold paragraph (matches * **file.py:**, - **file.py:**, or **file.py:**)
+        match = file_bold_pattern.match(line)
+        if match:
+            file_name = match.group(1).strip()
             blocks.append({
                 "object": "block",
                 "type": "paragraph",
@@ -156,8 +159,32 @@ def parse_features_to_blocks(summary, features):
             })
             i += 1
             # Collect following bullet points
-            while i < len(lines) and lines[i].strip().startswith("-"):
-                feature_text = lines[i].strip()[2:].strip()
+            while i < len(lines):
+                next_line = lines[i].strip()
+                if next_line.startswith("*") or next_line.startswith("-"):
+                    # Only treat as bullet if not a file name line
+                    if not file_bold_pattern.match(next_line):
+                        feature_text = next_line[1:].lstrip("-*").strip()
+                        if feature_text:
+                            blocks.append({
+                                "object": "block",
+                                "type": "bulleted_list_item",
+                                "bulleted_list_item": {
+                                    "rich_text": [{
+                                        "type": "text",
+                                        "text": {"content": feature_text}
+                                    }]
+                                }
+                            })
+                        i += 1
+                    else:
+                        break
+                else:
+                    break
+        elif line.startswith("*") or line.startswith("-"):
+            # Standalone bullet (not a file name)
+            if not file_bold_pattern.match(line):
+                feature_text = line[1:].lstrip("-*").strip()
                 if feature_text:
                     blocks.append({
                         "object": "block",
@@ -169,21 +196,6 @@ def parse_features_to_blocks(summary, features):
                             }]
                         }
                     })
-                i += 1
-        elif line.startswith("-"):
-            # Standalone bullet
-            feature_text = line[2:].strip()
-            if feature_text:
-                blocks.append({
-                    "object": "block",
-                    "type": "bulleted_list_item",
-                    "bulleted_list_item": {
-                        "rich_text": [{
-                            "type": "text",
-                            "text": {"content": feature_text}
-                        }]
-                    }
-                })
             i += 1
         elif line:
             # Fallback: plain paragraph
