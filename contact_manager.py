@@ -105,11 +105,14 @@ class ContactBook:
 
     def export_contacts_csv(self, filename="contacts_export.csv"):
         with open(filename, "w", newline="") as csvfile:
-            fieldnames = ["name", "phone", "email"]
+            fieldnames = ["name", "phone", "email", "favourite"]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for contact in self.contacts:
-                writer.writerow(contact.to_dict())
+                row = contact.to_dict()
+                # Only include the fields in fieldnames
+                row = {k: row.get(k, "") for k in fieldnames}
+                writer.writerow(row)
         print(f"Contacts exported to {filename}")
 
     def list_favourites(self):
