@@ -101,7 +101,7 @@ def delete_notion_page_children(page_id):
         requests.delete(url, headers=headers)
 
 def parse_features_to_blocks(summary, features):
-    """Convert summary and features text into Notion block objects with bold paragraphs for file names, never as bullets."""
+    """Convert summary and features text into Notion block objects with file names as headings (heading_2)."""
     blocks = []
     # Add summary as a heading and paragraph
     blocks.append({
@@ -136,34 +136,35 @@ def parse_features_to_blocks(summary, features):
             }]
         }
     })
-    # Regex for file name as bold paragraph
-    file_bold_pattern = re.compile(r'^(?:\*|-)?\s*\*\*(.+?):\*\*\s*$')
+    # Regex for file name as heading
+    file_heading_pattern = re.compile(r'^(?:\*|-)?\s*\*\*(.+?)\*\*:?\s*$|^(?:\*|-)?\s*([\w\-\.]+\.py):\s*$')
     lines = features.splitlines()
     i = 0
     while i < len(lines):
         line = lines[i].strip()
-        # File name as bold paragraph (matches * **file.py:**, - **file.py:**, or **file.py:**)
-        match = file_bold_pattern.match(line)
+        # File name as heading_2 (matches * **file.py:**, - **file.py:**, **file.py:**, or file.py:)
+        match = file_heading_pattern.match(line)
+        file_name = None
         if match:
-            file_name = match.group(1).strip()
-            blocks.append({
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{
-                        "type": "text",
-                        "text": {"content": file_name},
-                        "annotations": {"bold": True}
-                    }]
-                }
-            })
+            file_name = match.group(1) or match.group(2)
+            if file_name:
+                blocks.append({
+                    "object": "block",
+                    "type": "heading_2",
+                    "heading_2": {
+                        "rich_text": [{
+                            "type": "text",
+                            "text": {"content": file_name}
+                        }]
+                    }
+                })
             i += 1
             # Collect following bullet points
             while i < len(lines):
                 next_line = lines[i].strip()
                 if next_line.startswith("*") or next_line.startswith("-"):
                     # Only treat as bullet if not a file name line
-                    if not file_bold_pattern.match(next_line):
+                    if not file_heading_pattern.match(next_line):
                         feature_text = next_line[1:].lstrip("-*").strip()
                         if feature_text:
                             blocks.append({
@@ -183,7 +184,7 @@ def parse_features_to_blocks(summary, features):
                     break
         elif line.startswith("*") or line.startswith("-"):
             # Standalone bullet (not a file name)
-            if not file_bold_pattern.match(line):
+            if not file_heading_pattern.match(line):
                 feature_text = line[1:].lstrip("-*").strip()
                 if feature_text:
                     blocks.append({
