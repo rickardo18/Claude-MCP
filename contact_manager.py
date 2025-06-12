@@ -4,18 +4,19 @@ import re
 import csv
 
 class Contact:
-    def __init__(self, name, phone, email=None, favourite=False):
+    def __init__(self, name, phone, email=None, favourite=False, notes=None):
         self.name = name
         self.phone = phone
         self.email = email
         self.favourite = favourite
+        self.notes = notes or []
 
     def to_dict(self):
-        return {"name": self.name, "phone": self.phone, "email": self.email, "favourite": self.favourite}
+        return {"name": self.name, "phone": self.phone, "email": self.email, "favourite": self.favourite, "notes": self.notes}
 
     @staticmethod
     def from_dict(data):
-        return Contact(data["name"], data["phone"], data.get("email"), data.get("favourite", False))
+        return Contact(data["name"], data["phone"], data.get("email"), data.get("favourite", False), data.get("notes", []))
 
     def __str__(self):
         contact_str = f"{self.name} - {self.phone}"
@@ -23,6 +24,8 @@ class Contact:
             contact_str += f" - {self.email}"
         if self.favourite:
             contact_str += " [favourite]"
+        if self.notes:
+            contact_str += f" | Notes: {len(self.notes)}"
         return contact_str
 
     @staticmethod
@@ -137,10 +140,31 @@ class ContactBook:
         except IndexError:
             print("Invalid index.")
 
+    def add_note(self, index, note):
+        try:
+            contact = self.contacts[index - 1]
+            contact.notes.append(note)
+            self.save_contacts()
+            print(f"Note added to {contact.name}.")
+        except IndexError:
+            print("Invalid index.")
+
+    def view_notes(self, index):
+        try:
+            contact = self.contacts[index - 1]
+            if not contact.notes:
+                print(f"No notes for {contact.name}.")
+            else:
+                print(f"Notes for {contact.name}:")
+                for idx, note in enumerate(contact.notes, 1):
+                    print(f"  {idx}. {note}")
+        except IndexError:
+            print("Invalid index.")
+
 def main():
     book = ContactBook()
     while True:
-        print("\nCommands: add, list, list_favourites, mark_favourite, unmark_favourite, find, remove, edit, export, exit")
+        print("\nCommands: add, list, list_favourites, mark_favourite, unmark_favourite, find, remove, edit, export, add_note, view_notes, exit")
         cmd = input("Enter command: ").strip().lower()
 
         if cmd == "add":
@@ -169,6 +193,16 @@ def main():
             book.edit_contact(index)
         elif cmd == "export":
             book.export_contacts_csv()
+        elif cmd == "add_note":
+            index = int(input("Contact number to add note to: "))
+            note = input("Enter note: ").strip()
+            if note:
+                book.add_note(index, note)
+            else:
+                print("Note cannot be empty.")
+        elif cmd == "view_notes":
+            index = int(input("Contact number to view notes: "))
+            book.view_notes(index)
         elif cmd == "exit":
             break
         else:
