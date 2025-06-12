@@ -1,4 +1,4 @@
-import os
+"""import os
 import subprocess
 import requests
 
@@ -9,12 +9,12 @@ NOTION_FEATURES_PAGE_ID = os.environ['NOTION_FEATURES_PAGE_ID']
 
 
 def get_latest_commit_hash():
-    """Return the hash of the latest commit in the repository."""
+    #Return the hash of the latest commit in the repository.
     return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
 
 
 def get_changed_files(commit_hash):
-    """Return a list of files changed in the given commit."""
+    #Return a list of files changed in the given commit.
     files = subprocess.check_output([
         'git', 'diff-tree', '--no-commit-id', '--name-only', '-r', commit_hash
     ]).decode('utf-8').strip().split('\n')
@@ -22,7 +22,7 @@ def get_changed_files(commit_hash):
 
 
 def get_code_diff(files, commit_hash):
-    """Return a dictionary mapping filenames to their diffs for the given commit."""
+    #Return a dictionary mapping filenames to their diffs for the given commit.
     diffs = {}
     for file in files:
         try:
@@ -38,7 +38,7 @@ def get_code_diff(files, commit_hash):
 
 
 def infer_features_from_diff(diffs):
-    """Use Gemini API to infer features from code diffs. Returns a summary string."""
+    #Use Gemini API to infer features from code diffs. Returns a summary string.
     if not GEMINI_API_KEY:
         return "(AI feature inference unavailable: GEMINI_API_KEY not set)"
     prompt = (
@@ -69,7 +69,7 @@ def infer_features_from_diff(diffs):
 
 
 def get_notion_page_content(page_id):
-    """Fetch and return the current content of the Notion page as plain text."""
+    #Fetch and return the current content of the Notion page as plain text.
     url = f"https://api.notion.com/v1/blocks/{page_id}/children"
     headers = {
         'Authorization': f'Bearer {NOTION_TOKEN}',
@@ -99,7 +99,7 @@ def get_notion_page_content(page_id):
 
 
 def update_notion_features_page(features_summary):
-    """Append the new features summary to the Notion features page."""
+    #Append the new features summary to the Notion features page.
     headers = {
         'Authorization': f'Bearer {NOTION_TOKEN}',
         'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ def update_notion_features_page(features_summary):
 
 
 def main():
-    """Main entry point: get commit, infer features, and update Notion."""
+    #Main entry point: get commit, infer features, and update Notion.
     try:
         commit_hash = get_latest_commit_hash()  # Get latest commit hash
         changed_files = get_changed_files(commit_hash)  # Get changed files in commit
@@ -145,3 +145,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+    """
