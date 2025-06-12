@@ -140,7 +140,7 @@ class ContactBook:
 def main():
     book = ContactBook()
     while True:
-        print("\nCommands: add, list, list_favorites, mark_favorite, unmark_favorite, find, remove, edit, export, exit")
+        print("\nCommands: add, list, list_favourites, mark_favourite, unmark_favourite, find, remove, edit, export, exit")
         cmd = input("Enter command: ").strip().lower()
 
         if cmd == "add":
@@ -150,13 +150,13 @@ def main():
             book.add_contact(name, phone, email)
         elif cmd == "list":
             book.list_contacts()
-        elif cmd == "list_favorites":
-            book.list_favorites()
-        elif cmd == "mark_favorite":
-            index = int(input("Contact number to mark as favorite: "))
+        elif cmd == "list_favourites":
+            book.list_favourites()
+        elif cmd == "mark_favourite":
+            index = int(input("Contact number to mark as favourite: "))
             book.mark_favorite(index)
-        elif cmd == "unmark_favorite":
-            index = int(input("Contact number to unmark as favorite: "))
+        elif cmd == "unmark_favourite":
+            index = int(input("Contact number to unmark as favourite: "))
             book.unmark_favorite(index)
         elif cmd == "find":
             query = input("Search by name or email: ")
