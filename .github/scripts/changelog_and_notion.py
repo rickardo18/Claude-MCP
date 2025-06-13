@@ -75,13 +75,15 @@ def append_to_notion_page(entry):
                 }
             })
         elif line.startswith("- "):
+            # Remove leading '*', spaces, and extra whitespace after the dash
+            bullet_content = line[2:].lstrip("* ").strip()
             blocks.append({
                 "object": "block",
                 "type": "bulleted_list_item",
                 "bulleted_list_item": {
                     "rich_text": [{
                         "type": "text",
-                        "text": {"content": line[2:].strip()}
+                        "text": {"content": bullet_content}
                     }]
                 }
             })
