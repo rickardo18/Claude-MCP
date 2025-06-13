@@ -3,22 +3,46 @@ import subprocess
 import requests
 from datetime import datetime
 
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 NOTION_TOKEN = os.environ['NOTION_TOKEN']
 NOTION_PAGE_ID = os.environ['NOTION_CHANGELOG_DATABASE_ID']  # Notion page for changelog entries
 
 CHANGELOG_FILE = 'CHANGELOG.md'
 
+def get_latest_commit_hash():
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()
 
-def get_latest_commit():
-    # Get the latest commit info
-    log = subprocess.check_output([
-        'git', 'log', '-1', '--pretty=format:%h %s (%an, %ad)', '--date=short'
-    ]).decode('utf-8').strip()
-    return log
+def get_commit_diff(commit_hash):
+    # Get the diff for the latest commit
+    diff = subprocess.check_output([
+        'git', 'show', commit_hash, '--pretty=format:%h %s (%an, %ad)', '--date=short', '--unified=3'
+    ]).decode('utf-8')
+    return diff
 
-def format_changelog_entry(commit):
+def ai_generate_changelog(diff):
+    if not GEMINI_API_KEY:
+        return f"(AI changelog unavailable: GEMINI_API_KEY not set)\n\n{diff}"
+    prompt = (
+        "You are a release note generator. Given the following git commit diff, "
+        "write a concise, clear changelog entry describing the change in plain English. "
+        "Focus on what was changed, added, or fixed, and why if possible.\n\n"
+        f"Commit diff:\n{diff}\n\nChangelog entry:"
+    )
+    headers = {"Content-Type": "application/json"}
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+    response = requests.post(url, headers=headers, params={"key": GEMINI_API_KEY}, json=data)
+    if response.status_code == 200:
+        try:
+            return response.json()['candidates'][0]['content']['parts'][0]['text'].strip()
+        except Exception as e:
+            return f"(AI changelog failed: Unexpected Gemini response: {str(e)})\n\n{diff}"
+    else:
+        return f"(AI changelog failed: {response.text})\n\n{diff}"
+
+def format_changelog_entry(summary):
     date_str = datetime.now().strftime('%Y-%m-%d')
-    entry = f'\n## {date_str}\n\n- {commit}\n'
+    entry = f'\n## {date_str}\n\n- {summary}\n'
     return entry
 
 def append_to_changelog(entry):
@@ -41,7 +65,6 @@ def append_to_notion_page(entry):
         'Content-Type': 'application/json',
         'Notion-Version': '2022-06-28'
     }
-    # Add the entry as a new block (as a paragraph, could be improved to support markdown)
     data = {
         'children': [
             {
@@ -61,8 +84,10 @@ def append_to_notion_page(entry):
         raise Exception(f'Failed to append to Notion page: {response.text}')
 
 def main():
-    commit = get_latest_commit()
-    entry = format_changelog_entry(commit)
+    commit_hash = get_latest_commit_hash()
+    diff = get_commit_diff(commit_hash)
+    summary = ai_generate_changelog(diff)
+    entry = format_changelog_entry(summary)
     append_to_changelog(entry)
     append_to_notion_page(entry)
     print('Changelog updated and entry appended to Notion page.')
