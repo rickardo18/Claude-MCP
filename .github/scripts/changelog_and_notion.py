@@ -59,26 +59,50 @@ def append_to_changelog(entry):
         f.writelines(new_lines)
 
 def append_to_notion_page(entry):
+    # Parse the entry for heading and bullets
+    lines = entry.strip().splitlines()
+    blocks = []
+    for line in lines:
+        if line.startswith("## "):
+            blocks.append({
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": {"content": line[3:].strip()}
+                    }]
+                }
+            })
+        elif line.startswith("- "):
+            blocks.append({
+                "object": "block",
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": {"content": line[2:].strip()}
+                    }]
+                }
+            })
+        elif line.strip():
+            blocks.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": {"content": line.strip()}
+                    }]
+                }
+            })
     url = f'https://api.notion.com/v1/blocks/{NOTION_PAGE_ID}/children'
     headers = {
         'Authorization': f'Bearer {NOTION_TOKEN}',
         'Content-Type': 'application/json',
         'Notion-Version': '2022-06-28'
     }
-    data = {
-        'children': [
-            {
-                'object': 'block',
-                'type': 'paragraph',
-                'paragraph': {
-                    'rich_text': [{
-                        'type': 'text',
-                        'text': {'content': entry}
-                    }]
-                }
-            }
-        ]
-    }
+    data = {'children': blocks}
     response = requests.patch(url, headers=headers, json=data)
     if response.status_code not in (200, 204):
         raise Exception(f'Failed to append to Notion page: {response.text}')
