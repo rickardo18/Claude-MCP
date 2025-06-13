@@ -75,6 +75,31 @@ def analyze_codebase(files):
     else:
         return f"(AI analysis failed: {response.text})", ""
 
+def get_notion_page_children(page_id):
+    """Get all child block IDs of a Notion page."""
+    url = f"https://api.notion.com/v1/blocks/{page_id}/children?page_size=100"
+    headers = {
+        'Authorization': f'Bearer {NOTION_TOKEN}',
+        'Notion-Version': '2022-06-28'
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        blocks = response.json().get('results', [])
+        return [block['id'] for block in blocks]
+    else:
+        return []
+
+def delete_notion_page_children(page_id):
+    """Delete all child blocks of a Notion page (except the title)."""
+    block_ids = get_notion_page_children(page_id)
+    headers = {
+        'Authorization': f'Bearer {NOTION_TOKEN}',
+        'Notion-Version': '2022-06-28'
+    }
+    for block_id in block_ids:
+        url = f"https://api.notion.com/v1/blocks/{block_id}"
+        requests.delete(url, headers=headers)
+
 def parse_features_to_blocks(summary, features):
     """Convert summary and features text into Notion block objects with file names as headings (heading_2)."""
     blocks = []
@@ -191,7 +216,10 @@ def parse_features_to_blocks(summary, features):
     return blocks
 
 def update_notion_page(summary, features):
-    """Overwrite the Notion page (except title) with summary and features as formatted blocks using a single PATCH request."""
+    """Overwrite the Notion page (except title) with summary and features as formatted blocks."""
+    # 1. Delete all children
+    delete_notion_page_children(NOTION_PAGE_ID)
+    # 2. Add new blocks
     blocks = parse_features_to_blocks(summary, features)
     url = f'https://api.notion.com/v1/blocks/{NOTION_PAGE_ID}/children'
     headers = {
