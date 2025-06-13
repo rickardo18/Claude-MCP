@@ -1,5 +1,6 @@
 import os
 import json
+import datetime
 
 TODO_FILE = "todo_list.json"
 
@@ -19,7 +20,10 @@ def add_task(tasks):
         priority = input("Enter priority (High/Medium/Low): ").strip().capitalize()
         if priority not in ["High", "Medium", "Low"]:
             priority = "Medium"
-        tasks.append({"task": task, "done": False, "priority": priority})
+        due_date = input("Enter due date (YYYY-MM-DD) or leave blank: ").strip()
+        if due_date == "":
+            due_date = None
+        tasks.append({"task": task, "done": False, "priority": priority, "due_date": due_date})
         print("Task added.")
     else:
         print("Empty task not added.")
@@ -31,7 +35,9 @@ def view_tasks(tasks):
     for i, t in enumerate(tasks):
         status = "✔️" if t["done"] else "❌"
         priority = t.get("priority", "Medium")
-        print(f"{i+1}. [{status}] {t['task']} (Priority: {priority})")
+        due_date = t.get("due_date")
+        due_str = f" | Due: {due_date}" if due_date else ""
+        print(f"{i+1}. [{status}] {t['task']} (Priority: {priority}{due_str})")
 
 def mark_task_done(tasks):
     view_tasks(tasks)
@@ -62,8 +68,12 @@ def filter_tasks(tasks):
     print("1. Show only completed tasks")
     print("2. Show only incomplete tasks")
     print("3. Search by keyword")
-    print("4. Back to main menu")
-    choice = input("Choose a filter option (1-4): ").strip()
+    print("4. Show tasks due today")
+    print("5. Show overdue tasks")
+    print("6. Back to main menu")
+    choice = input("Choose a filter option (1-6): ").strip()
+
+    today = datetime.date.today().isoformat()
 
     if choice == "1":
         filtered = [t for t in tasks if t["done"]]
@@ -79,6 +89,14 @@ def filter_tasks(tasks):
         print(f"\nTasks containing '{keyword}':")
         view_tasks(filtered)
     elif choice == "4":
+        filtered = [t for t in tasks if t.get("due_date") == today]
+        print("\nTasks Due Today:")
+        view_tasks(filtered)
+    elif choice == "5":
+        filtered = [t for t in tasks if t.get("due_date") and t["due_date"] < today and not t["done"]]
+        print("\nOverdue Tasks:")
+        view_tasks(filtered)
+    elif choice == "6":
         return
     else:
         print("Invalid choice.")
@@ -100,6 +118,12 @@ def edit_task(tasks):
                 print("Priority updated.")
             else:
                 print("Priority unchanged.")
+            new_due = input(f"Enter new due date (YYYY-MM-DD) [current: {tasks[index].get('due_date', 'None')}]: ").strip()
+            if new_due:
+                tasks[index]["due_date"] = new_due
+                print("Due date updated.")
+            else:
+                print("Due date unchanged.")
         else:
             print("Invalid task number.")
     except ValueError:
