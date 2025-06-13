@@ -23,10 +23,7 @@ def add_task(tasks):
         due_date = input("Enter due date (YYYY-MM-DD) or leave blank: ").strip()
         if due_date == "":
             due_date = None
-        recurrence = input("Enter recurrence (None/Daily/Weekly/Monthly): ").strip().capitalize()
-        if recurrence not in ["None", "Daily", "Weekly", "Monthly"]:
-            recurrence = "None"
-        tasks.append({"task": task, "done": False, "priority": priority, "due_date": due_date, "recurrence": recurrence})
+        tasks.append({"task": task, "done": False, "priority": priority, "due_date": due_date})
         print("Task added.")
     else:
         print("Empty task not added.")
@@ -40,45 +37,15 @@ def view_tasks(tasks):
         priority = t.get("priority", "Medium")
         due_date = t.get("due_date")
         due_str = f" | Due: {due_date}" if due_date else ""
-        recurrence = t.get("recurrence", "None")
-        rec_str = f" | Recurs: {recurrence}" if recurrence and recurrence != "None" else ""
-        print(f"{i+1}. [{status}] {t['task']} (Priority: {priority}{due_str}{rec_str})")
+        print(f"{i+1}. [{status}] {t['task']} (Priority: {priority}{due_str})")
 
 def mark_task_done(tasks):
     view_tasks(tasks)
     try:
         index = int(input("Enter task number to mark as done: ")) - 1
         if 0 <= index < len(tasks):
-            task = tasks[index]
             tasks[index]["done"] = True
             print("Task marked as done.")
-            # Handle recurrence
-            recurrence = task.get("recurrence", "None")
-            due_date = task.get("due_date")
-            if recurrence != "None" and due_date:
-                from datetime import datetime, timedelta
-                try:
-                    dt = datetime.strptime(due_date, "%Y-%m-%d")
-                    if recurrence == "Daily":
-                        next_due = dt + timedelta(days=1)
-                    elif recurrence == "Weekly":
-                        next_due = dt + timedelta(weeks=1)
-                    elif recurrence == "Monthly":
-                        # Add 1 month (approximate by adding 30 days)
-                        next_due = dt + timedelta(days=30)
-                    else:
-                        next_due = None
-                    if next_due:
-                        tasks.append({
-                            "task": task["task"],
-                            "done": False,
-                            "priority": task.get("priority", "Medium"),
-                            "due_date": next_due.strftime("%Y-%m-%d"),
-                            "recurrence": recurrence
-                        })
-                        print(f"Recurring task created for {next_due.strftime('%Y-%m-%d')}.")
-                except Exception as e:
-                    print("Could not create recurring task:", e)
         else:
             print("Invalid task number.")
     except ValueError:
@@ -157,12 +124,6 @@ def edit_task(tasks):
                 print("Due date updated.")
             else:
                 print("Due date unchanged.")
-            new_recur = input(f"Enter new recurrence (None/Daily/Weekly/Monthly) [current: {tasks[index].get('recurrence', 'None')}]: ").strip().capitalize()
-            if new_recur in ["None", "Daily", "Weekly", "Monthly"]:
-                tasks[index]["recurrence"] = new_recur
-                print("Recurrence updated.")
-            else:
-                print("Recurrence unchanged.")
         else:
             print("Invalid task number.")
     except ValueError:
