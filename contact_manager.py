@@ -2,20 +2,22 @@ import json
 import os
 import re
 import csv
+from datetime import datetime, timedelta
 
 class Contact:
-    def __init__(self, name, phone, email=None, favourite=False):
+    def __init__(self, name, phone, email=None, favourite=False, birthday=None):
         self.name = name
         self.phone = phone
         self.email = email
         self.favourite = favourite
+        self.birthday = birthday
 
     def to_dict(self):
-        return {"name": self.name, "phone": self.phone, "email": self.email, "favourite": self.favourite}
+        return {"name": self.name, "phone": self.phone, "email": self.email, "favourite": self.favourite, "birthday": self.birthday}
 
     @staticmethod
     def from_dict(data):
-        return Contact(data["name"], data["phone"], data.get("email"), data.get("favourite", False))
+        return Contact(data["name"], data["phone"], data.get("email"), data.get("favourite", False), data.get("birthday"))
 
     def __str__(self):
         contact_str = f"{self.name} - {self.phone}"
@@ -23,6 +25,12 @@ class Contact:
             contact_str += f" - {self.email}"
         if self.favourite:
             contact_str += " [favourite]"
+        if self.birthday:
+            today = datetime.today().strftime("%m-%d")
+            bday_str = f" (Birthday: {self.birthday})"
+            if self.birthday[5:] == today:
+                bday_str += " 🎂"
+            contact_str += bday_str
         return contact_str
 
     @staticmethod
@@ -38,11 +46,11 @@ class ContactBook:
         self.filename = filename
         self.load_contacts()
 
-    def add_contact(self, name, phone, email=None):
+    def add_contact(self, name, phone, email=None, birthday=None):
         if email and not Contact.validate_email(email):
             print("Invalid email format. Contact not added.")
             return
-        self.contacts.append(Contact(name, phone, email))
+        self.contacts.append(Contact(name, phone, email, birthday=birthday))
         print(f"Added contact: {name}")
         self.save_contacts()
 
@@ -77,6 +85,7 @@ class ContactBook:
             new_name = input(f"New name (press Enter to keep '{contact.name}'): ").strip()
             new_phone = input(f"New phone (press Enter to keep '{contact.phone}'): ").strip()
             new_email = input(f"New email (press Enter to keep '{contact.email or ''}'): ").strip()
+            new_birthday = input(f"New birthday (YYYY-MM-DD, press Enter to keep '{contact.birthday or ''}'): ").strip()
             if new_name:
                 contact.name = new_name
             if new_phone:
@@ -88,6 +97,8 @@ class ContactBook:
                     print("Invalid email format. Email not updated.")
             elif new_email == '':
                 contact.email = None
+            if new_birthday:
+                contact.birthday = new_birthday
             self.save_contacts()
             print("Contact updated.")
         except IndexError:
@@ -105,7 +116,7 @@ class ContactBook:
 
     def export_contacts_csv(self, filename="contacts_export.csv"):
         with open(filename, "w", newline="") as csvfile:
-            fieldnames = ["name", "phone", "email"]
+            fieldnames = ["name", "phone", "email", "birthday"]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for contact in self.contacts:
@@ -137,17 +148,36 @@ class ContactBook:
         except IndexError:
             print("Invalid index.")
 
+    def list_upcoming_birthdays(self, days=7):
+        today = datetime.today()
+        upcoming = []
+        for c in self.contacts:
+            if c.birthday:
+                try:
+                    bday_this_year = datetime.strptime(f"{today.year}-{c.birthday[5:]}", "%Y-%m-%d")
+                    if 0 <= (bday_this_year - today).days <= days:
+                        upcoming.append((bday_this_year, c))
+                except Exception:
+                    continue
+        if not upcoming:
+            print(f"No birthdays in the next {days} days.")
+        else:
+            print(f"Birthdays in the next {days} days:")
+            for bday, c in sorted(upcoming):
+                print(f"{c} on {bday.strftime('%Y-%m-%d')}")
+
 def main():
     book = ContactBook()
     while True:
-        print("\nCommands: add, list, list_favourites, mark_favourite, unmark_favourite, find, remove, edit, export, exit")
+        print("\nCommands: add, list, list_favourites, mark_favourite, unmark_favourite, find, remove, edit, export, birthdays, exit")
         cmd = input("Enter command: ").strip().lower()
 
         if cmd == "add":
             name = input("Name: ")
             phone = input("Phone: ")
             email = input("Email (optional, press Enter to skip): ").strip() or None
-            book.add_contact(name, phone, email)
+            birthday = input("Birthday (YYYY-MM-DD, optional, press Enter to skip): ").strip() or None
+            book.add_contact(name, phone, email, birthday)
         elif cmd == "list":
             book.list_contacts()
         elif cmd == "list_favourites":
@@ -169,6 +199,12 @@ def main():
             book.edit_contact(index)
         elif cmd == "export":
             book.export_contacts_csv()
+        elif cmd == "birthdays":
+            try:
+                days = int(input("Show birthdays in how many days? (default 7): ") or "7")
+            except ValueError:
+                days = 7
+            book.list_upcoming_birthdays(days)
         elif cmd == "exit":
             break
         else:
