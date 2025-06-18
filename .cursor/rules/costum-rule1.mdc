@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Code style rules:
+- Use explicit error handling, no unwraps in production code
+- Include docstrings for public functions
+- Prefer composition over inheritance
+- Keep functions under 50 lines
+- Use `pretty_assertions` in test
+- Be explicit about lifetimes in Rust
+- Use `anyhow::Result` for error handling in services and repositories.
+- Create domain errors using `thiserror`.
+
+- Never implement `From` for converting domain errors, manually convert them
