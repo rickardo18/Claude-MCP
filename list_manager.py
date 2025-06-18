@@ -26,7 +26,16 @@ def add_task(tasks):
         recurrence = input("Enter recurrence (None/Daily/Weekly/Monthly): ").strip().capitalize()
         if recurrence not in ["None", "Daily", "Weekly", "Monthly"]:
             recurrence = "None"
-        tasks.append({"task": task, "done": False, "priority": priority, "due_date": due_date, "recurrence": recurrence})
+        reminder_time = input("Enter reminder time (HH:MM 24-hour) or leave blank: ").strip()
+        if reminder_time:
+            try:
+                datetime.datetime.strptime(reminder_time, "%H:%M")
+            except ValueError:
+                print("Invalid time format. Reminder not set.")
+                reminder_time = None
+        else:
+            reminder_time = None
+        tasks.append({"task": task, "done": False, "priority": priority, "due_date": due_date, "recurrence": recurrence, "reminder_time": reminder_time})
         print("Task added.")
     else:
         print("Empty task not added.")
@@ -42,7 +51,9 @@ def view_tasks(tasks):
         due_str = f" | Due: {due_date}" if due_date else ""
         recurrence = t.get("recurrence", "None")
         rec_str = f" | Recurs: {recurrence}" if recurrence and recurrence != "None" else ""
-        print(f"{i+1}. [{status}] {t['task']} (Priority: {priority}{due_str}{rec_str})")
+        reminder_time = t.get("reminder_time")
+        reminder_str = f" | Reminder: {reminder_time}" if reminder_time else ""
+        print(f"{i+1}. [{status}] {t['task']} (Priority: {priority}{due_str}{rec_str}{reminder_str})")
 
 def mark_task_done(tasks):
     view_tasks(tasks)
@@ -163,6 +174,16 @@ def edit_task(tasks):
                 print("Recurrence updated.")
             else:
                 print("Recurrence unchanged.")
+            new_reminder = input(f"Enter new reminder time (HH:MM 24-hour) [current: {tasks[index].get('reminder_time', 'None')}]: ").strip()
+            if new_reminder:
+                try:
+                    datetime.datetime.strptime(new_reminder, "%H:%M")
+                    tasks[index]["reminder_time"] = new_reminder
+                    print("Reminder time updated.")
+                except ValueError:
+                    print("Invalid time format. Reminder time unchanged.")
+            else:
+                print("Reminder time unchanged.")
         else:
             print("Invalid task number.")
     except ValueError:
