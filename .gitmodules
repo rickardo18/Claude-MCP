@@ -1,0 +1,3 @@
+[submodule "AI Prompts"]
+	path = AI Prompts
+	url = https://github.com/rickardo18/ai_prompts_library.git
