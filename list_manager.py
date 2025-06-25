@@ -189,8 +189,113 @@ def edit_task(tasks):
     except ValueError:
         print("Please enter a valid number.")
 
+def save_custom_views(custom_views):
+    with open("custom_views.json", "w") as f:
+        json.dump(custom_views, f, indent=2)
+
+def load_custom_views():
+    if os.path.exists("custom_views.json"):
+        with open("custom_views.json", "r") as f:
+            return json.load(f)
+    return {}
+
+# --- Sorting and Custom Views ---
+def sort_tasks(tasks, criterion, reverse=False):
+    if criterion == "priority":
+        priority_order = {"High": 0, "Medium": 1, "Low": 2}
+        return sorted(tasks, key=lambda t: priority_order.get(t.get("priority", "Medium"), 1), reverse=reverse)
+    elif criterion == "due_date":
+        return sorted(tasks, key=lambda t: t.get("due_date") or "9999-12-31", reverse=reverse)
+    elif criterion == "status":
+        return sorted(tasks, key=lambda t: t.get("done", False), reverse=reverse)
+    else:
+        return tasks
+
+def manage_custom_views(custom_views):
+    while True:
+        print("\nCustom Views Menu")
+        print("1. List custom views")
+        print("2. Add new custom view")
+        print("3. Delete custom view")
+        print("4. Back to main menu")
+        choice = input("Choose an option (1-4): ").strip()
+        if choice == "1":
+            if not custom_views:
+                print("No custom views saved.")
+            else:
+                for name, conf in custom_views.items():
+                    print(f"- {name}: sort by {conf['sort_by']}, reverse: {conf['reverse']}")
+        elif choice == "2":
+            name = input("Enter a name for the custom view: ").strip()
+            if name in custom_views:
+                print("A view with this name already exists.")
+                continue
+            print("Sort by: 1. priority 2. due_date 3. status")
+            sort_by = input("Choose sort criterion (priority/due_date/status): ").strip()
+            if sort_by not in ["priority", "due_date", "status"]:
+                print("Invalid sort criterion.")
+                continue
+            reverse = input("Sort descending? (y/n): ").strip().lower() == "y"
+            custom_views[name] = {"sort_by": sort_by, "reverse": reverse}
+            save_custom_views(custom_views)
+            print("Custom view saved.")
+        elif choice == "3":
+            name = input("Enter the name of the custom view to delete: ").strip()
+            if name in custom_views:
+                del custom_views[name]
+                save_custom_views(custom_views)
+                print("Custom view deleted.")
+            else:
+                print("No such custom view.")
+        elif choice == "4":
+            break
+        else:
+            print("Invalid choice.")
+
+def view_tasks_with_sort(tasks, custom_views):
+    print("\nView Options:")
+    print("1. Normal view")
+    print("2. Sort by priority")
+    print("3. Sort by due date")
+    print("4. Sort by status (done/incomplete)")
+    print("5. Use custom view")
+    choice = input("Choose a view option (1-5): ").strip()
+    if choice == "1":
+        view_tasks(tasks)
+    elif choice == "2":
+        sorted_tasks = sort_tasks(tasks, "priority")
+        view_tasks(sorted_tasks)
+    elif choice == "3":
+        sorted_tasks = sort_tasks(tasks, "due_date")
+        view_tasks(sorted_tasks)
+    elif choice == "4":
+        sorted_tasks = sort_tasks(tasks, "status")
+        view_tasks(sorted_tasks)
+    elif choice == "5":
+        if not custom_views:
+            print("No custom views available.")
+            return
+        print("Available custom views:")
+        for i, name in enumerate(custom_views.keys()):
+            print(f"{i+1}. {name}")
+        try:
+            idx = int(input("Choose a custom view by number: ")) - 1
+            if 0 <= idx < len(custom_views):
+                name = list(custom_views.keys())[idx]
+                conf = custom_views[name]
+                sorted_tasks = sort_tasks(tasks, conf["sort_by"], conf["reverse"])
+                print(f"\nCustom View: {name}")
+                view_tasks(sorted_tasks)
+            else:
+                print("Invalid selection.")
+        except ValueError:
+            print("Invalid input.")
+    else:
+        print("Invalid choice.")
+
 def main():
     tasks = load_tasks()
+    custom_views = load_custom_views()
     while True:
         print("\nTo-Do List Menu")
         print("1. View tasks")
@@ -199,11 +304,12 @@ def main():
         print("4. Remove task")
         print("5. Filter tasks")
         print("6. Edit task")
-        print("7. Exit")
-        choice = input("Choose an option (1-7): ").strip()
+        print("7. Manage custom views")
+        print("8. Exit")
+        choice = input("Choose an option (1-8): ").strip()
 
         if choice == "1":
-            view_tasks(tasks)
+            view_tasks_with_sort(tasks, custom_views)
         elif choice == "2":
             add_task(tasks)
         elif choice == "3":
@@ -215,7 +321,10 @@ def main():
         elif choice == "6":
             edit_task(tasks)
         elif choice == "7":
+            manage_custom_views(custom_views)
+        elif choice == "8":
             save_tasks(tasks)
+            save_custom_views(custom_views)
             print("Goodbye!")
             break
         else:
