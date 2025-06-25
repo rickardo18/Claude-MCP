@@ -22,3 +22,33 @@ This project also includes a command-line Contact Manager. It allows users to:
 - Export contacts to CSV
 
 Contacts are stored in a local JSON file (`contacts.json`). The Contact Manager provides a menu-driven interface for easy contact management.
+
+# AI Prompts Submodule
+
+This project uses an external repository for AI prompt files, included as a Git submodule in the `AI Prompts` directory.
+
+## Cloning with Submodules
+When cloning this repository, use the following command to ensure the submodule is included:
+
+```
+git clone --recurse-submodules <main-repo-url>
+```
+
+If you have already cloned the repository without submodules, run:
+
+```
+git submodule update --init --recursive
+```
+
+## Updating the AI Prompts Submodule
+To update the AI Prompts to the latest version from the external repository:
+
+```
+cd "AI Prompts"
+git pull origin main
+cd ..
+git add AI\ Prompts
+git commit -m "Update AI Prompts submodule"
+```
+
+Replace `<main-repo-url>` with your repository's URL.
