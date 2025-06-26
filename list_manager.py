@@ -1,6 +1,14 @@
 import os
 import json
 import datetime
+import threading
+import time
+try:
+    from plyer import notification
+except ImportError:
+    notification = None
+import smtplib
+from email.mime.text import MIMEText
 
 TODO_FILE = "todo_list.json"
 
@@ -293,9 +301,101 @@ def view_tasks_with_sort(tasks, custom_views):
     else:
         print("Invalid choice.")
 
+# --- Notification/Reminder Configuration ---
+NOTIFY_CONFIG_FILE = "notify_config.json"
+def load_notify_config():
+    if os.path.exists(NOTIFY_CONFIG_FILE):
+        with open(NOTIFY_CONFIG_FILE, "r") as f:
+            return json.load(f)
+    return {"method": "system", "email": "", "smtp": "", "password": ""}
+
+def save_notify_config(config):
+    with open(NOTIFY_CONFIG_FILE, "w") as f:
+        json.dump(config, f, indent=2)
+
+def configure_notifications():
+    print("\nNotification Preferences:")
+    print("1. System notification (default)")
+    print("2. Email reminder")
+    print("3. Both")
+    method = input("Choose notification method (1-3): ").strip()
+    if method == "2" or method == "3":
+        email = input("Enter your email address: ").strip()
+        smtp = input("Enter SMTP server (e.g., smtp.gmail.com): ").strip()
+        password = input("Enter your email password (will be saved locally): ").strip()
+    else:
+        email = smtp = password = ""
+    if method == "1":
+        method_str = "system"
+    elif method == "2":
+        method_str = "email"
+    elif method == "3":
+        method_str = "both"
+    else:
+        method_str = "system"
+    config = {"method": method_str, "email": email, "smtp": smtp, "password": password}
+    save_notify_config(config)
+    print("Notification preferences saved.")
+
+# --- Notification Logic ---
+def send_system_notification(title, message):
+    if notification:
+        notification.notify(title=title, message=message, timeout=10)
+    else:
+        print(f"[NOTIFY] {title}: {message}")
+
+def send_email_reminder(config, subject, body):
+    if not config["email"] or not config["smtp"] or not config["password"]:
+        print("Email configuration incomplete. Skipping email reminder.")
+        return
+    try:
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = config["email"]
+        msg["To"] = config["email"]
+        with smtplib.SMTP_SSL(config["smtp"], 465) as server:
+            server.login(config["email"], config["password"])
+            server.sendmail(config["email"], [config["email"]], msg.as_string())
+    except Exception as e:
+        print(f"Failed to send email reminder: {e}")
+
+def check_and_send_reminders(tasks, config):
+    now = datetime.datetime.now()
+    today = now.date().isoformat()
+    current_time = now.strftime("%H:%M")
+    for t in tasks:
+        if t.get("done"):
+            continue
+        due = t.get("due_date")
+        reminder = t.get("reminder_time")
+        # Notify if due today and reminder time matches
+        if due == today and reminder == current_time:
+            msg = f"Task '{t['task']}' is due today."
+            if config["method"] in ("system", "both"):
+                send_system_notification("Task Reminder", msg)
+            if config["method"] in ("email", "both"):
+                send_email_reminder(config, "Task Reminder", msg)
+        # Notify if overdue and not done
+        elif due and due < today:
+            msg = f"Task '{t['task']}' is OVERDUE!"
+            if config["method"] in ("system", "both"):
+                send_system_notification("Overdue Task", msg)
+            if config["method"] in ("email", "both"):
+                send_email_reminder(config, "Overdue Task", msg)
+
+# --- Reminder Thread ---
+def reminder_thread_func(tasks, config):
+    while True:
+        check_and_send_reminders(tasks, config)
+        time.sleep(60)  # Check every minute
+
 def main():
     tasks = load_tasks()
     custom_views = load_custom_views()
+    notify_config = load_notify_config()
+    # Start reminder thread
+    reminder_thread = threading.Thread(target=reminder_thread_func, args=(tasks, notify_config), daemon=True)
+    reminder_thread.start()
     while True:
         print("\nTo-Do List Menu")
         print("1. View tasks")
@@ -305,8 +405,9 @@ def main():
         print("5. Filter tasks")
         print("6. Edit task")
         print("7. Manage custom views")
-        print("8. Exit")
-        choice = input("Choose an option (1-8): ").strip()
+        print("8. Configure notifications")
+        print("9. Exit")
+        choice = input("Choose an option (1-9): ").strip()
 
         if choice == "1":
             view_tasks_with_sort(tasks, custom_views)
@@ -323,6 +424,9 @@ def main():
         elif choice == "7":
             manage_custom_views(custom_views)
         elif choice == "8":
+            configure_notifications()
+            notify_config = load_notify_config()  # Reload config after change
+        elif choice == "9":
             save_tasks(tasks)
             save_custom_views(custom_views)
             print("Goodbye!")
@@ -332,3 +436,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Documentation: 
+# - System notifications require the 'plyer' package (pip install plyer). 
+# - Email reminders require valid SMTP credentials and an internet connection. 
+# - Notification preferences are saved in 'notify_config.json'. 
+# - Reminders are checked every minute in the background while the app is running.
