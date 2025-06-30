@@ -17,7 +17,16 @@ def save_tasks(tasks):
 def add_task(tasks):
     task = input("Enter the task: ").strip()
     if task:
-        tasks.append({"task": task, "done": False})
+        due_date = input("Enter due date (YYYY-MM-DD) or leave blank: ").strip()
+        if due_date:
+            try:
+                datetime.datetime.strptime(due_date, "%Y-%m-%d")
+            except ValueError:
+                print("Invalid date format. Task not added.")
+                return
+        else:
+            due_date = None
+        tasks.append({"task": task, "done": False, "due_date": due_date})
         print("Task added.")
     else:
         print("Empty task not added.")
@@ -26,9 +35,21 @@ def view_tasks(tasks):
     if not tasks:
         print("No tasks found.")
         return
+    today = datetime.date.today()
     for i, t in enumerate(tasks):
         status = "✔️" if t["done"] else "❌"
-        print(f"{i+1}. [{status}] {t['task']}")
+        due = t.get("due_date")
+        overdue = False
+        due_str = ""
+        if due:
+            try:
+                due_date = datetime.datetime.strptime(due, "%Y-%m-%d").date()
+                if not t["done"] and due_date < today:
+                    overdue = True
+                due_str = f" (Due: {due}{' - OVERDUE' if overdue else ''})"
+            except Exception:
+                due_str = f" (Due: {due} - INVALID DATE)"
+        print(f"{i+1}. [{status}] {t['task']}{due_str}")
 
 def mark_task_done(tasks):
     view_tasks(tasks)
@@ -54,8 +75,30 @@ def remove_task(tasks):
     except ValueError:
         print("Please enter a valid number.")
 
+def show_reminders(tasks):
+    today = datetime.date.today()
+    reminders = []
+    for t in tasks:
+        if t.get("done"):
+            continue
+        due = t.get("due_date")
+        if due:
+            try:
+                due_date = datetime.datetime.strptime(due, "%Y-%m-%d").date()
+                if due_date < today:
+                    reminders.append(f"OVERDUE: {t['task']} (was due {due})")
+                elif due_date == today:
+                    reminders.append(f"DUE TODAY: {t['task']}")
+            except Exception:
+                continue
+    if reminders:
+        print("\nReminders:")
+        for r in reminders:
+            print("-", r)
+
 def main():
     tasks = load_tasks()
+    show_reminders(tasks)
     while True:
         print("\nTo-Do List Menu")
         print("1. View tasks")
