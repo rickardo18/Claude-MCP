@@ -16,19 +16,40 @@ def save_tasks(tasks):
 
 def add_task(tasks):
     task = input("Enter the task: ").strip()
-    if task:
-        tasks.append({"task": task, "done": False})
-        print("Task added.")
-    else:
+    if not task:
         print("Empty task not added.")
+        return
+    due_date = input("Enter due date (YYYY-MM-DD, optional): ").strip()
+    if due_date:
+        try:
+            datetime.datetime.strptime(due_date, "%Y-%m-%d")
+        except ValueError:
+            print("Invalid date format. Task not added.")
+            return
+    else:
+        due_date = None
+    tasks.append({"task": task, "done": False, "due_date": due_date})
+    print("Task added.")
 
 def view_tasks(tasks):
     if not tasks:
         print("No tasks found.")
         return
+    today = datetime.date.today()
     for i, t in enumerate(tasks):
         status = "✔️" if t["done"] else "❌"
-        print(f"{i+1}. [{status}] {t['task']}")
+        due = t.get("due_date")
+        overdue = False
+        if due and not t["done"]:
+            try:
+                due_date_obj = datetime.datetime.strptime(due, "%Y-%m-%d").date()
+                if due_date_obj < today:
+                    overdue = True
+            except ValueError:
+                pass
+        due_str = f" (Due: {due})" if due else ""
+        overdue_str = " [OVERDUE]" if overdue else ""
+        print(f"{i+1}. [{status}] {t['task']}{due_str}{overdue_str}")
 
 def mark_task_done(tasks):
     view_tasks(tasks)
