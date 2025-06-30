@@ -96,6 +96,31 @@ def show_reminders(tasks):
         for r in reminders:
             print("-", r)
 
+def edit_task(tasks):
+    view_tasks(tasks)
+    try:
+        index = int(input("Enter task number to edit: ")) - 1
+        if 0 <= index < len(tasks):
+            task = tasks[index]
+            print(f"Editing task: {task['task']}")
+            new_desc = input(f"New description (press Enter to keep '{task['task']}'): ").strip()
+            new_due = input(f"New due date (YYYY-MM-DD, press Enter to keep '{task.get('due_date') or 'None'}'): ").strip()
+            if new_desc:
+                task['task'] = new_desc
+            if new_due:
+                try:
+                    datetime.datetime.strptime(new_due, "%Y-%m-%d")
+                    task['due_date'] = new_due
+                except ValueError:
+                    print("Invalid date format. Due date not updated.")
+            elif new_due == '':
+                pass  # keep existing due date
+            print("Task updated.")
+        else:
+            print("Invalid task number.")
+    except ValueError:
+        print("Please enter a valid number.")
+
 def main():
     tasks = load_tasks()
     show_reminders(tasks)
@@ -105,8 +130,9 @@ def main():
         print("2. Add task")
         print("3. Mark task as done")
         print("4. Remove task")
-        print("5. Exit")
-        choice = input("Choose an option (1-5): ").strip()
+        print("5. Edit task")
+        print("6. Exit")
+        choice = input("Choose an option (1-6): ").strip()
 
         if choice == "1":
             view_tasks(tasks)
@@ -117,6 +143,8 @@ def main():
         elif choice == "4":
             remove_task(tasks)
         elif choice == "5":
+            edit_task(tasks)
+        elif choice == "6":
             save_tasks(tasks)
             print("Goodbye!")
             break
