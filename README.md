@@ -52,3 +52,6 @@ git commit -m "Update AI Prompts submodule"
 ```
 
 Replace `<main-repo-url>` with your repository's URL.
+
+
+test commit bla
