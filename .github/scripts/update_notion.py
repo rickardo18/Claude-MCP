@@ -33,7 +33,7 @@ def get_commit_info():
     }
 
 def update_notion_page(commit_info):
-    """Update the Notion page with commit information using structured blocks"""
+    """Append the latest commit information as new blocks to the Notion page, preserving previous content."""
     notion_token = os.environ['NOTION_TOKEN']
     page_id = os.environ['NOTION_PAGE_ID']
     
@@ -73,22 +73,12 @@ def update_notion_page(commit_info):
             "rich_text": [{"type": "text", "text": {"content": f"Last updated: {datetime.now().isoformat()}"}}]
         }
     })
-    # Remove all existing children (optional, for a clean update)
-    # Get current children
-    url_children = f'https://api.notion.com/v1/blocks/{page_id}/children'
-    resp = requests.get(url_children, headers=headers)
-    if resp.status_code == 200:
-        children = resp.json().get('results', [])
-        for child in children:
-            block_id = child['id']
-            requests.delete(f'https://api.notion.com/v1/blocks/{block_id}', headers=headers)
-    # Add new blocks
+    # Append new blocks to the page (do not delete existing content)
     url = f'https://api.notion.com/v1/blocks/{page_id}/children'
-    for block in blocks:
-        data = {"children": [block]}
-        response = requests.patch(url, headers=headers, json=data)
-        if response.status_code not in (200, 201):
-            raise Exception(f"Failed to update Notion page: {response.text}")
+    data = {"children": blocks}
+    response = requests.patch(url, headers=headers, json=data)
+    if response.status_code not in (200, 201):
+        raise Exception(f"Failed to update Notion page: {response.text}")
 
 def main():
     try:
