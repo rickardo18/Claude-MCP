@@ -45,13 +45,11 @@ def update_notion_page(commit_info):
     
     # Prepare Notion blocks
     blocks = [
-        {"object": "block", "type": "heading_1", "heading_1": {"rich_text": [{"type": "text", "text": {"content": "Latest Commit Update"}}]}},
-        {"object": "block", "type": "heading_2", "heading_2": {"rich_text": [{"type": "text", "text": {"content": "Commit Details"}}]}},
-        {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"type": "text", "text": {"content": f"Hash: {commit_info['hash'][:8]}"}}]}},
+        {"object": "block", "type": "heading_2", "heading_2": {"rich_text": [{"type": "text", "text": {"content": f"Commit: {commit_info['hash'][:8]}"}}]}},
         {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"type": "text", "text": {"content": f"Author: {commit_info['author']} ({commit_info['email']})"}}]}},
         {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"type": "text", "text": {"content": f"Date: {commit_info['timestamp']}"}}]}},
         {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"type": "text", "text": {"content": f"Message: {commit_info['message']}"}}]}},
-        {"object": "block", "type": "heading_2", "heading_2": {"rich_text": [{"type": "text", "text": {"content": "Changed Files"}}]}},
+        {"object": "block", "type": "heading_3", "heading_3": {"rich_text": [{"type": "text", "text": {"content": "Changed Files"}}]}},
     ]
     # Add bulleted list for changed files
     for file in commit_info['changed_files']:
