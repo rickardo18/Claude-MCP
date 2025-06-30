@@ -1,6 +1,5 @@
 import os
 import subprocess
-import json
 import requests
 from datetime import datetime
 
@@ -34,7 +33,7 @@ def get_commit_info():
     }
 
 def update_notion_page(commit_info):
-    """Update the Notion page with commit information"""
+    """Update the Notion page with commit information using structured blocks"""
     notion_token = os.environ['NOTION_TOKEN']
     page_id = os.environ['NOTION_PAGE_ID']
     
@@ -44,46 +43,52 @@ def update_notion_page(commit_info):
         'Notion-Version': '2022-06-28'
     }
     
-    # Format changed files as a bulleted list
-    files_list = '\n'.join([f'• {file}' for file in commit_info['changed_files']])
-    
-    # Create the content for the page
-    content = f"""# Latest Commit Update
-    
-## Commit Details
-- **Hash**: {commit_info['hash'][:8]}
-- **Author**: {commit_info['author']} ({commit_info['email']})
-- **Date**: {commit_info['timestamp']}
-- **Message**: {commit_info['message']}
-
-## Changed Files
-{files_list}
-
----
-Last updated: {datetime.now().isoformat()}"""
-
-    # Update the page
+    # Prepare Notion blocks
+    blocks = [
+        {"object": "block", "type": "heading_1", "heading_1": {"rich_text": [{"type": "text", "text": {"content": "Latest Commit Update"}}]}},
+        {"object": "block", "type": "heading_2", "heading_2": {"rich_text": [{"type": "text", "text": {"content": "Commit Details"}}]}},
+        {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"type": "text", "text": {"content": f"Hash: {commit_info['hash'][:8]}"}}]}},
+        {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"type": "text", "text": {"content": f"Author: {commit_info['author']} ({commit_info['email']})"}}]}},
+        {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"type": "text", "text": {"content": f"Date: {commit_info['timestamp']}"}}]}},
+        {"object": "block", "type": "paragraph", "paragraph": {"rich_text": [{"type": "text", "text": {"content": f"Message: {commit_info['message']}"}}]}},
+        {"object": "block", "type": "heading_2", "heading_2": {"rich_text": [{"type": "text", "text": {"content": "Changed Files"}}]}},
+    ]
+    # Add bulleted list for changed files
+    for file in commit_info['changed_files']:
+        if file.strip():
+            blocks.append({
+                "object": "block",
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {
+                    "rich_text": [{"type": "text", "text": {"content": file}}]
+                }
+            })
+    # Divider
+    blocks.append({"object": "block", "type": "divider", "divider": {}})
+    # Last updated
+    blocks.append({
+        "object": "block",
+        "type": "paragraph",
+        "paragraph": {
+            "rich_text": [{"type": "text", "text": {"content": f"Last updated: {datetime.now().isoformat()}"}}]
+        }
+    })
+    # Remove all existing children (optional, for a clean update)
+    # Get current children
+    url_children = f'https://api.notion.com/v1/blocks/{page_id}/children'
+    resp = requests.get(url_children, headers=headers)
+    if resp.status_code == 200:
+        children = resp.json().get('results', [])
+        for child in children:
+            block_id = child['id']
+            requests.delete(f'https://api.notion.com/v1/blocks/{block_id}', headers=headers)
+    # Add new blocks
     url = f'https://api.notion.com/v1/blocks/{page_id}/children'
-    
-    data = {
-        "children": [{
-            "object": "block",
-            "type": "paragraph",
-            "paragraph": {
-                "rich_text": [{
-                    "type": "text",
-                    "text": {
-                        "content": content
-                    }
-                }]
-            }
-        }]
-    }
-    
-    response = requests.patch(url, headers=headers, json=data)
-    
-    if response.status_code != 200:
-        raise Exception(f"Failed to update Notion page: {response.text}")
+    for block in blocks:
+        data = {"children": [block]}
+        response = requests.patch(url, headers=headers, json=data)
+        if response.status_code not in (200, 201):
+            raise Exception(f"Failed to update Notion page: {response.text}")
 
 def main():
     try:
