@@ -113,10 +113,37 @@ class ContactBook:
     def unmark_favourite(self, index):
         pass
 
+    def import_contacts_csv(self, filename):
+        imported = 0
+        errors = []
+        if not os.path.exists(filename):
+            print(f"File not found: {filename}")
+            return
+        with open(filename, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for i, row in enumerate(reader, 2):  # start at 2 for header row
+                name = row.get('name', '').strip()
+                phone = row.get('phone', '').strip()
+                email = row.get('email', '').strip() if 'email' in row else None
+                if not name or not phone:
+                    errors.append(f"Row {i}: Missing required fields (name, phone)")
+                    continue
+                if email and not Contact.validate_email(email):
+                    errors.append(f"Row {i}: Invalid email '{email}'")
+                    continue
+                self.contacts.append(Contact(name, phone, email))
+                imported += 1
+        self.save_contacts()
+        print(f"Imported {imported} contacts from {filename}.")
+        if errors:
+            print("Errors:")
+            for err in errors:
+                print("-", err)
+
 def main():
     book = ContactBook()
     while True:
-        print("\nCommands: add, list, find, remove, edit, exit")
+        print("\nCommands: add, list, find, remove, edit, import, exit")
         cmd = input("Enter command: ").strip().lower()
 
         if cmd == "add":
@@ -135,6 +162,9 @@ def main():
         elif cmd == "edit":
             index = int(input("Contact number to edit: "))
             book.edit_contact(index)
+        elif cmd == "import":
+            filename = input("Enter CSV filename to import: ").strip()
+            book.import_contacts_csv(filename)
         elif cmd == "exit":
             break
         else:
