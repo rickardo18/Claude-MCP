@@ -113,6 +113,41 @@ class ContactBook:
     def unmark_favourite(self, index):
         pass
 
+    def import_contacts_csv(self, filename="contacts_import.csv"):
+        if not os.path.exists(filename):
+            print(f"File '{filename}' not found.")
+            return
+        added = 0
+        skipped = 0
+        with open(filename, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                name = row.get('name', '').strip()
+                phone = row.get('phone', '').strip()
+                email = row.get('email', '').strip() or None
+                if not name or not phone:
+                    print(f"Skipping row with missing name or phone: {row}")
+                    skipped += 1
+                    continue
+                # Duplicate check (same as add_contact)
+                duplicate = False
+                for c in self.contacts:
+                    if (c.name.lower() == name.lower() and (c.phone == phone or (email and c.email and c.email.lower() == email.lower()))):
+                        duplicate = True
+                        break
+                if duplicate:
+                    print(f"Duplicate contact skipped: {name}")
+                    skipped += 1
+                    continue
+                if email and not Contact.validate_email(email):
+                    print(f"Invalid email for {name}, skipping.")
+                    skipped += 1
+                    continue
+                self.contacts.append(Contact(name, phone, email))
+                added += 1
+        self.save_contacts()
+        print(f"Import complete. {added} contacts added, {skipped} skipped.")
+
 def main():
     book = ContactBook()
     while True:
