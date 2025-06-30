@@ -11,18 +11,16 @@ class Contact:
         self.favourite = favourite
 
     def to_dict(self):
-        return {"name": self.name, "phone": self.phone, "email": self.email, "favourite": self.favourite}
+        return {"name": self.name, "phone": self.phone, "email": self.email}
 
     @staticmethod
     def from_dict(data):
-        return Contact(data["name"], data["phone"], data.get("email"), data.get("favourite", False))
+        return Contact(data["name"], data["phone"], data.get("email"))
 
     def __str__(self):
         contact_str = f"{self.name} - {self.phone}"
         if self.email:
             contact_str += f" - {self.email}"
-        if self.favourite:
-            contact_str += " [favourite]"
         return contact_str
 
     @staticmethod
@@ -104,43 +102,21 @@ class ContactBook:
                 self.contacts = [Contact.from_dict(d) for d in data]
 
     def export_contacts_csv(self, filename="contacts_export.csv"):
-        with open(filename, "w", newline="") as csvfile:
-            fieldnames = ["name", "phone", "email"]
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for contact in self.contacts:
-                writer.writerow(contact.to_dict())
-        print(f"Contacts exported to {filename}")
+        pass
 
     def list_favourites(self):
-        favourites = [c for c in self.contacts if c.favourite]
-        if not favourites:
-            print("No favourite contacts found.")
-        for idx, contact in enumerate(favourites, 1):
-            print(f"{idx}. {contact}")
+        pass
 
     def mark_favourite(self, index):
-        try:
-            contact = self.contacts[index - 1]
-            contact.favourite = True
-            self.save_contacts()
-            print(f"Marked {contact.name} as favourite.")
-        except IndexError:
-            print("Invalid index.")
+        pass
 
     def unmark_favourite(self, index):
-        try:
-            contact = self.contacts[index - 1]
-            contact.favourite = False
-            self.save_contacts()
-            print(f"Unmarked {contact.name} as favourite.")
-        except IndexError:
-            print("Invalid index.")
+        pass
 
 def main():
     book = ContactBook()
     while True:
-        print("\nCommands: add, list, list_favourites, mark_favourite, unmark_favourite, find, remove, edit, export, exit")
+        print("\nCommands: add, list, find, remove, edit, exit")
         cmd = input("Enter command: ").strip().lower()
 
         if cmd == "add":
@@ -150,14 +126,6 @@ def main():
             book.add_contact(name, phone, email)
         elif cmd == "list":
             book.list_contacts()
-        elif cmd == "list_favourites":
-            book.list_favourites()
-        elif cmd == "mark_favourite":
-            index = int(input("Contact number to mark as favourite: "))
-            book.mark_favourite(index)
-        elif cmd == "unmark_favourite":
-            index = int(input("Contact number to unmark as favourite: "))
-            book.unmark_favourite(index)
         elif cmd == "find":
             query = input("Search by name or email: ")
             book.find_contact(query)
@@ -167,8 +135,6 @@ def main():
         elif cmd == "edit":
             index = int(input("Contact number to edit: "))
             book.edit_contact(index)
-        elif cmd == "export":
-            book.export_contacts_csv()
         elif cmd == "exit":
             break
         else:
