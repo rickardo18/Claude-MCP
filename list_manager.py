@@ -26,7 +26,10 @@ def add_task(tasks):
                 return
         else:
             due_date = None
-        tasks.append({"task": task, "done": False, "due_date": due_date})
+        priority = input("Enter priority (High/Medium/Low, default Medium): ").strip().capitalize()
+        if priority not in ("High", "Medium", "Low"):
+            priority = "Medium"
+        tasks.append({"task": task, "done": False, "due_date": due_date, "priority": priority})
         print("Task added.")
     else:
         print("Empty task not added.")
@@ -49,7 +52,8 @@ def view_tasks(tasks):
                 due_str = f" (Due: {due}{' - OVERDUE' if overdue else ''})"
             except Exception:
                 due_str = f" (Due: {due} - INVALID DATE)"
-        print(f"{i+1}. [{status}] {t['task']}{due_str}")
+        priority = t.get("priority", "Medium")
+        print(f"{i+1}. [{status}] {t['task']} [Priority: {priority}]{due_str}")
 
 def mark_task_done(tasks):
     view_tasks(tasks)
@@ -105,6 +109,7 @@ def edit_task(tasks):
             print(f"Editing task: {task['task']}")
             new_desc = input(f"New description (press Enter to keep '{task['task']}'): ").strip()
             new_due = input(f"New due date (YYYY-MM-DD, press Enter to keep '{task.get('due_date') or 'None'}'): ").strip()
+            new_priority = input(f"New priority (High/Medium/Low, press Enter to keep '{task.get('priority', 'Medium')}'): ").strip().capitalize()
             if new_desc:
                 task['task'] = new_desc
             if new_due:
@@ -115,6 +120,12 @@ def edit_task(tasks):
                     print("Invalid date format. Due date not updated.")
             elif new_due == '':
                 pass  # keep existing due date
+            if new_priority in ("High", "Medium", "Low"):
+                task['priority'] = new_priority
+            elif new_priority == '':
+                pass  # keep existing priority
+            else:
+                print("Invalid priority. Priority not updated.")
             print("Task updated.")
         else:
             print("Invalid task number.")
