@@ -132,6 +132,38 @@ def edit_task(tasks):
     except ValueError:
         print("Please enter a valid number.")
 
+def search_tasks(tasks):
+    if not tasks:
+        print("No tasks to search.")
+        return
+    print("\nSearch Tasks")
+    print("1. By keyword")
+    print("2. By due date (YYYY-MM-DD)")
+    print("3. By priority (High/Medium/Low)")
+    choice = input("Choose search type (1-3): ").strip()
+    results = []
+    if choice == "1":
+        keyword = input("Enter keyword to search: ").strip().lower()
+        results = [t for t in tasks if keyword in t["task"].lower()]
+    elif choice == "2":
+        date = input("Enter due date (YYYY-MM-DD): ").strip()
+        results = [t for t in tasks if t.get("due_date") == date]
+    elif choice == "3":
+        priority = input("Enter priority (High/Medium/Low): ").strip().capitalize()
+        if priority in ("High", "Medium", "Low"):
+            results = [t for t in tasks if t.get("priority", "Medium") == priority]
+        else:
+            print("Invalid priority.")
+            return
+    else:
+        print("Invalid choice.")
+        return
+    if results:
+        print(f"\nFound {len(results)} matching task(s):")
+        view_tasks(results)
+    else:
+        print("No matching tasks found.")
+
 def main():
     tasks = load_tasks()
     show_reminders(tasks)
@@ -143,7 +175,8 @@ def main():
         print("4. Remove task")
         print("5. Edit task")
         print("6. Exit")
-        choice = input("Choose an option (1-6): ").strip()
+        print("7. Search tasks")
+        choice = input("Choose an option (1-7): ").strip()
 
         if choice == "1":
             view_tasks(tasks)
@@ -159,6 +192,8 @@ def main():
             save_tasks(tasks)
             print("Goodbye!")
             break
+        elif choice == "7":
+            search_tasks(tasks)
         else:
             print("Invalid choice.")
 
