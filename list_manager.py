@@ -29,7 +29,10 @@ def add_task(tasks):
         priority = input("Enter priority (High/Medium/Low, default Medium): ").strip().capitalize()
         if priority not in ("High", "Medium", "Low"):
             priority = "Medium"
-        tasks.append({"task": task, "done": False, "due_date": due_date, "priority": priority})
+        recurrence = input("Enter recurrence (None/Daily/Weekly/Monthly, default None): ").strip().capitalize()
+        if recurrence not in ("None", "Daily", "Weekly", "Monthly"):
+            recurrence = "None"
+        tasks.append({"task": task, "done": False, "due_date": due_date, "priority": priority, "recurrence": recurrence})
         print("Task added.")
     else:
         print("Empty task not added.")
@@ -53,15 +56,44 @@ def view_tasks(tasks):
             except Exception:
                 due_str = f" (Due: {due} - INVALID DATE)"
         priority = t.get("priority", "Medium")
-        print(f"{i+1}. [{status}] {t['task']} [Priority: {priority}]{due_str}")
+        recurrence = t.get("recurrence", "None")
+        rec_str = f" [Recurs: {recurrence}]" if recurrence and recurrence != "None" else ""
+        print(f"{i+1}. [{status}] {t['task']} [Priority: {priority}]{due_str}{rec_str}")
 
 def mark_task_done(tasks):
     view_tasks(tasks)
     try:
         index = int(input("Enter task number to mark as done: ")) - 1
         if 0 <= index < len(tasks):
+            task = tasks[index]
             tasks[index]["done"] = True
             print("Task marked as done.")
+            # Handle recurrence
+            recurrence = task.get("recurrence", "None")
+            due = task.get("due_date")
+            if recurrence and recurrence != "None" and due:
+                try:
+                    due_date = datetime.datetime.strptime(due, "%Y-%m-%d").date()
+                    if recurrence == "Daily":
+                        next_due = due_date + datetime.timedelta(days=1)
+                    elif recurrence == "Weekly":
+                        next_due = due_date + datetime.timedelta(weeks=1)
+                    elif recurrence == "Monthly":
+                        # Add one month, simple version
+                        month = due_date.month + 1 if due_date.month < 12 else 1
+                        year = due_date.year if due_date.month < 12 else due_date.year + 1
+                        day = min(due_date.day, 28)  # avoid invalid dates
+                        next_due = datetime.date(year, month, day)
+                    else:
+                        next_due = None
+                    if next_due:
+                        new_task = task.copy()
+                        new_task["done"] = False
+                        new_task["due_date"] = next_due.strftime("%Y-%m-%d")
+                        tasks.append(new_task)
+                        print(f"Recurring task created for next {recurrence.lower()} (due {next_due})")
+                except Exception:
+                    pass
         else:
             print("Invalid task number.")
     except ValueError:
@@ -110,6 +142,7 @@ def edit_task(tasks):
             new_desc = input(f"New description (press Enter to keep '{task['task']}'): ").strip()
             new_due = input(f"New due date (YYYY-MM-DD, press Enter to keep '{task.get('due_date') or 'None'}'): ").strip()
             new_priority = input(f"New priority (High/Medium/Low, press Enter to keep '{task.get('priority', 'Medium')}'): ").strip().capitalize()
+            new_recurrence = input(f"New recurrence (None/Daily/Weekly/Monthly, press Enter to keep '{task.get('recurrence', 'None')}'): ").strip().capitalize()
             if new_desc:
                 task['task'] = new_desc
             if new_due:
@@ -126,6 +159,12 @@ def edit_task(tasks):
                 pass  # keep existing priority
             else:
                 print("Invalid priority. Priority not updated.")
+            if new_recurrence in ("None", "Daily", "Weekly", "Monthly"):
+                task['recurrence'] = new_recurrence
+            elif new_recurrence == '':
+                pass  # keep existing recurrence
+            else:
+                print("Invalid recurrence. Recurrence not updated.")
             print("Task updated.")
         else:
             print("Invalid task number.")
